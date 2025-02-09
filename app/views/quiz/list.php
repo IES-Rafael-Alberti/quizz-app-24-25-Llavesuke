@@ -23,3 +23,7 @@
     <?php endwhile; ?>
     </tbody>
 </table>
+
+<form method="POST" action="/public/index.php?controller=auth&action=logout">
+    <button type="submit">Logout</button>
+</form>
