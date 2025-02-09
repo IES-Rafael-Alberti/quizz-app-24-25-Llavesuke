@@ -24,11 +24,48 @@ class Question {
     }
 
     public function getByQuizId($quiz_id) {
-        $query = "SELECT * FROM " . $this->table . " WHERE quiz_id = ?";
+        $query = "SELECT *, 
+              CASE correct_option 
+                WHEN 'a' THEN option_a 
+                WHEN 'b' THEN option_b 
+                WHEN 'c' THEN option_c 
+                WHEN 'd' THEN option_d 
+              END AS correct_option_text 
+              FROM " . $this->table . " WHERE quiz_id = ?";
         $stmt = $this->conn->prepare($query);
         $stmt->bind_param("i", $quiz_id);
         $stmt->execute();
         return $stmt->get_result();
+    }
+
+    public function getById($question_id) {
+        $query = "SELECT * FROM " . $this->table . " WHERE question_id = ?";
+        $stmt = $this->conn->prepare($query);
+        $stmt->bind_param("i", $question_id);
+        $stmt->execute();
+        return $stmt->get_result()->fetch_assoc();
+    }
+
+    public function update() {
+        $query = "UPDATE " . $this->table . " SET question_text = ?, option_a = ?, option_b = ?, option_c = ?, option_d = ?, correct_option = ? WHERE question_id = ?";
+        $stmt = $this->conn->prepare($query);
+        $stmt->bind_param("ssssssi", $this->question_text, $this->option_a, $this->option_b, $this->option_c, $this->option_d, $this->correct_option, $this->question_id);
+        return $stmt->execute();
+    }
+
+    public function delete($question_id) {
+        $query = "DELETE FROM " . $this->table . " WHERE question_id = ?";
+        $stmt = $this->conn->prepare($query);
+        $stmt->bind_param("i", $question_id);
+        return $stmt->execute();
+    }
+
+    public function getQuizIdByQuestionId($question_id) {
+        $query = "SELECT quiz_id FROM " . $this->table . " WHERE question_id = ?";
+        $stmt = $this->conn->prepare($query);
+        $stmt->bind_param("i", $question_id);
+        $stmt->execute();
+        return $stmt->get_result()->fetch_assoc()['quiz_id'];
     }
 }
 ?>

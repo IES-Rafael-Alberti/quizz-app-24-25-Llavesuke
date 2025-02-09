@@ -12,9 +12,9 @@ class User {
     }
 
     public function register() {
-        $query = "INSERT INTO " . $this->table . " (username, password) VALUES (?, ?)";
+        $query = "INSERT INTO " . $this->table . " (username, password, role) VALUES (?, ?, ?)";
         $stmt = $this->conn->prepare($query);
-        $stmt->bind_param("ss", $this->username, $this->password);
+        $stmt->bind_param("sss", $this->username, $this->password, $this->role);
         return $stmt->execute();
     }
 

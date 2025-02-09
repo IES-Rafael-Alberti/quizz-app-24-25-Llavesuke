@@ -38,10 +38,22 @@ CREATE TABLE Respuestas (
                             FOREIGN KEY (question_id) REFERENCES Preguntas(question_id)
 );
 
+CREATE TABLE Resultados (
+                            result_id INT AUTO_INCREMENT PRIMARY KEY,
+                            user_id INT,
+                            quiz_id INT,
+                            score INT,
+                            total_questions INT,
+                            percentage FLOAT,
+                            attempt_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                            FOREIGN KEY (user_id) REFERENCES Usuarios(user_id),
+                            FOREIGN KEY (quiz_id) REFERENCES Cuestionarios(quiz_id)
+);
+
 -- Insert example data
 
 -- Usuarios
-INSERT INTO Usuarios (username, password, role) VALUES ('admin', 'hashed_password', 'admin');
+INSERT INTO Usuarios (username, password, role) VALUES ('admin', '$2y$10$pLdTD./4ccfqTHhSPLx1vOKcQ86du.MzznPGSjHqtBibgZS1uh4Cm', 'admin');
 INSERT INTO Usuarios (username, password, role) VALUES ('user1', 'hashed_password', 'user');
 
 -- Cuestionarios
