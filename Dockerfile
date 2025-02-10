@@ -1,19 +1,22 @@
 FROM php:7.4-apache
 
-# Install mysqli extension
+# Instalar extensiones necesarias
 RUN docker-php-ext-install mysqli && docker-php-ext-enable mysqli
 
-# Set the working directory to /var/www/html
-WORKDIR /var/www/html
-
-# Copy the entire project into the container
-COPY . .
-
-# Set the DocumentRoot to /var/www/html/public
-RUN sed -i 's|/var/www/html|/var/www/html/public|g' /etc/apache2/sites-available/000-default.conf
-
-# Enable Apache modules (if needed)
+# Habilitar mod_rewrite de Apache
 RUN a2enmod rewrite
 
-# Expose port 80
+# Copiar la configuración de Apache
+COPY apache-config.conf /etc/apache2/sites-available/000-default.conf
+
+# Establecer el directorio de trabajo
+WORKDIR /var/www/html
+
+# Copiar el código fuente al contenedor
+COPY . .
+
+# Asegurarse de que los archivos tengan permisos adecuados
+RUN chown -R www-data:www-data /var/www/html
+
+# Exponer el puerto 80
 EXPOSE 80

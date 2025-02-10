@@ -122,7 +122,7 @@ $content = ob_get_clean();
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Quiz Application</title>
-    <link href="/public/quiz.css" rel="stylesheet" type="text/css">
+    <link href="/quiz.css" rel="stylesheet" type="text/css">
 </head>
 <body>
 <div id="app"><?php echo $content; ?></div>
