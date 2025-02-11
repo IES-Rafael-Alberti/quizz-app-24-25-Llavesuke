@@ -84,25 +84,47 @@ class QuizController {
     }
 
     public function submitQuiz($quiz_id) {
+        session_start();
+        error_log("submitQuiz called with quiz_id: " . $quiz_id);
+
         $questions = $this->question->getByQuizId($quiz_id);
+        if ($questions === false) {
+            error_log("No questions found for quiz_id: " . $quiz_id);
+            return;
+        }
+
         $score = 0;
         $total_questions = $questions->num_rows;
+        error_log("Total questions: " . $total_questions);
 
         while ($question = $questions->fetch_assoc()) {
-            $selected_option = $_POST['question_' . $question['question_id']];
-            if ($selected_option == $question['correct_option_text']) {
+            $question_id = $question['question_id'];
+            $selected_option = strtoupper($_POST['question_' . $question_id]);
+            $correct_option = $question['correct_option'];
+            error_log("Question ID: " . $question_id . ", Selected Option: " . $selected_option . ", Correct Option: " . $correct_option);
+
+            if ($selected_option == $correct_option) {
                 $score++;
             }
         }
 
         $percentage = ($score / $total_questions) * 100;
+        error_log("Score: " . $score . ", Percentage: " . $percentage);
 
         // Insert the result into the database
         $user_id = $_SESSION['user_id'];
         $query = "INSERT INTO Resultados (user_id, quiz_id, score, total_questions, percentage) VALUES (?, ?, ?, ?, ?)";
         $stmt = $this->db->prepare($query);
+        if ($stmt === false) {
+            error_log("Failed to prepare statement: " . $this->db->error);
+            return;
+        }
         $stmt->bind_param("iiiii", $user_id, $quiz_id, $score, $total_questions, $percentage);
-        $stmt->execute();
+        if ($stmt->execute()) {
+            error_log("Result inserted successfully");
+        } else {
+            error_log("Failed to insert result: " . $stmt->error);
+        }
 
         header("Location: /public/index.php?controller=quiz&action=summary&score=$score&total_questions=$total_questions&percentage=$percentage&quiz_id=$quiz_id");
         exit();

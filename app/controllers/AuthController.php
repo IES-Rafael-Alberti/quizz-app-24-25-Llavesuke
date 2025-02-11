@@ -49,6 +49,9 @@ class AuthController
             } else {
                 echo "Error en el registro";
             }
+        } else {
+            // Mostrar el formulario de registro si no es una solicitud POST
+            include dirname(__FILE__) . '/../views/auth/register.php';
         }
     }
 
@@ -86,8 +89,13 @@ class AuthController
                 header("Location: /public/index.php?controller=quiz&action=getAllQuizzes");
                 exit();
             } else {
-                // Handle login failure
+                // Mostrar error si las credenciales son incorrectas
+                $error = "Credenciales incorrectas";
+                include dirname(__FILE__) . '/../views/auth/login.php';
             }
+        } else {
+            // Mostrar el formulario de login si no es una solicitud POST
+            include dirname(__FILE__) . '/../views/auth/login.php';
         }
     }
 
@@ -96,7 +104,7 @@ class AuthController
         session_unset();
         session_destroy();
 
-        // Remove the "Remember Me" cookie
+        // Eliminar la cookie "Remember Me"
         setcookie('rememberme', '', time() - 3600, '/', 'localhost', true, true);
 
         header("Location: /public/index.php?controller=auth&action=login");

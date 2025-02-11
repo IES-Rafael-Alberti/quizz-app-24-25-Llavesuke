@@ -6,7 +6,7 @@ require_once(__DIR__ . '/../app/controllers/QuizController.php');
 
 global $conn;
 
-if (!isset($_SESSION)) {
+if (session_status() == PHP_SESSION_NONE) {
     session_start();
 }
 
@@ -38,32 +38,38 @@ if (!isset($_SESSION['checked_rememberme']) && isset($_COOKIE['rememberme'])) {
     }
 }
 
-function isAdmin() {
-    return isset($_SESSION['role']) && $_SESSION['role'] === 'admin';
-}
+$controller = $_GET['controller'] ?? 'auth';
+$action = $_GET['action'] ?? 'login';
 
-$controller = isset($_GET['controller']) ? $_GET['controller'] : 'auth';
-$action = isset($_GET['action']) ? $_GET['action'] : 'login';
+if (($controller == 'auth' && $action == 'login') || ($controller == 'auth' && $action == 'register') || ($controller == 'auth' && $action == 'logout') || ($controller == 'auth' && $action == '') || ($controller == '' && $action == '') || ($_SERVER['REQUEST_URI'] == '/')) {
+    // Borrar la sesión y la cookie PHPSESSID
+    session_unset();
+    session_destroy();
+
+    // Borrar la cookie PHPSESSID
+    if (ini_get("session.use_cookies")) {
+        $params = session_get_cookie_params();
+        setcookie(session_name(), '', time() - 42000,
+            $params["path"], $params["domain"],
+            $params["secure"], $params["httponly"]
+        );
+    }
+
+    session_start();
+    error_log("Session cleared for login, register, logout, or root action");
+}
 
 ob_start();
 
 switch ($controller) {
     case 'auth':
         $authController = new AuthController();
-        if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['action'])) {
-            if ($_POST['action'] == 'register') {
-                $authController->register();
-            } elseif ($_POST['action'] == 'login') {
-                $authController->login();
-            }
-        } else {
-            if ($action == 'register') {
-                include dirname(__FILE__) . '/../app/views/auth/register.php';
-            } elseif ($action == 'login') {
-                include dirname(__FILE__) . '/../app/views/auth/login.php';
-            } elseif ($action == 'logout') {
-                $authController->logout();
-            }
+        if ($action == 'login') {
+            $authController->login();
+        } elseif ($action == 'register') {
+            $authController->register();
+        } elseif ($action == 'logout') {
+            $authController->logout();
         }
         break;
     case 'quiz':
@@ -72,40 +78,15 @@ switch ($controller) {
             exit();
         }
         $quizController = new QuizController();
-        if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['action'])) {
-            if ($_POST['action'] == 'addQuestion' && isAdmin()) {
-                $quizController->addQuestion();
-            } elseif ($_POST['action'] == 'createQuiz') {
-                $quizController->createQuiz();
-            } elseif ($_POST['action'] == 'updateQuiz') {
-                $quizController->updateQuiz($_GET['quiz_id']);
-            } elseif ($_POST['action'] == 'updateQuestion') {
-                $quizController->updateQuestion($_GET['question_id']);
-            } elseif ($_POST['action'] == 'submitQuiz') {
-                $quizController->submitQuiz($_GET['quiz_id']);
-            }
-        } else {
-            if ($action == 'getAllQuizzes') {
-                $quizController->getAllQuizzes();
-            } elseif ($action == 'takeQuiz') {
-                $quizController->takeQuiz($_GET['quiz_id']);
-            } elseif ($action == 'summary') {
-                $quizController->summary();
-            } elseif ($action == 'createQuizForm' && isAdmin()) {
-                $quizController->createQuizForm();
-            } elseif ($action == 'editQuizForm' && isAdmin()) {
-                $quizController->editQuizForm($_GET['quiz_id']);
-            } elseif ($action == 'manageQuizzes' && isAdmin()) {
-                $quizController->manageQuizzes();
-            } elseif ($action == 'addQuestionForm' && isAdmin()) {
-                $quizController->addQuestionForm($_GET['quiz_id']);
-            } elseif ($action == 'editQuestionForm' && isAdmin()) {
-                $quizController->editQuestionForm($_GET['question_id']);
-            } elseif ($action == 'deleteQuiz' && isAdmin()) {
-                $quizController->deleteQuiz($_GET['quiz_id']);
-            } elseif ($action == 'deleteQuestion' && isAdmin()) {
-                $quizController->deleteQuestion($_GET['question_id']);
-            }
+        if ($action == 'submitQuiz') {
+            error_log("Routing to submitQuiz");
+            $quizController->submitQuiz($_GET['quiz_id']);
+        } elseif ($action == 'takeQuiz') {
+            $quizController->takeQuiz($_GET['quiz_id']);
+        } elseif ($action == 'summary') {
+            $quizController->summary();
+        } elseif ($action == 'getAllQuizzes') {
+            $quizController->getAllQuizzes();
         }
         break;
     default:
