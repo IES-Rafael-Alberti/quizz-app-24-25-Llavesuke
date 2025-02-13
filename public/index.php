@@ -1,17 +1,35 @@
 <?php
+// Iniciar el buffer de salida
+ob_start();
 
+// Cargar configuraciones y controladores
 require_once(__DIR__ . '/../config/config.php');
 require_once(__DIR__ . '/../app/controllers/AuthController.php');
 require_once(__DIR__ . '/../app/controllers/QuizController.php');
 
 global $conn;
 
-if (session_status() == PHP_SESSION_NONE) {
+// Iniciar la sesión si no está activa
+if (session_status() === PHP_SESSION_NONE) {
     session_start();
 }
 
-if (!isset($_SESSION['checked_rememberme']) && isset($_COOKIE['rememberme'])) {
-    error_log("Remember Me cookie found: " . $_COOKIE['rememberme']);
+// Obtener el controlador y la acción desde la URL
+$controller = $_GET['controller'] ?? 'auth';
+$action = $_GET['action'] ?? 'login';
+
+// Verificar si el usuario está logeado
+$isLoggedIn = isset($_SESSION['username']);
+
+// Si el usuario está logeado, no permitir acceso a login, register o la raíz (/)
+if ($isLoggedIn && ($controller == 'auth' && ($action == 'login' || $action == 'register') || ($controller == '' && $action == ''))) {
+    // Redirigir al usuario a la página principal o al dashboard
+    header("Location: /public/index.php?controller=quiz&action=getAllQuizzes");
+    exit();
+}
+
+// Manejar la lógica de "Remember Me"
+if (!$isLoggedIn && isset($_COOKIE['rememberme'])) {
     $token = $_COOKIE['rememberme'];
     $query = "SELECT * FROM Usuarios WHERE remember_token = ?";
     $stmt = $conn->prepare($query);
@@ -20,47 +38,19 @@ if (!isset($_SESSION['checked_rememberme']) && isset($_COOKIE['rememberme'])) {
     $user = $stmt->get_result()->fetch_assoc();
 
     if ($user) {
-        session_unset();
         $_SESSION['username'] = $user['username'];
         $_SESSION['role'] = $user['role'];
         $_SESSION['user_id'] = $user['user_id'];
         $_SESSION['checked_rememberme'] = true;
-        error_log("User found: " . $user['username']);
-        error_log("Session variables set: username=" . $_SESSION['username'] . ", role=" . $_SESSION['role'] . ", user_id=" . $_SESSION['user_id']);
+        error_log("Usuario autenticado mediante 'Remember Me'.");
         header("Location: /public/index.php?controller=quiz&action=getAllQuizzes");
         exit();
     } else {
-        error_log("User not found.");
-    }
-} else {
-    if (isset($_SESSION['username'])) {
-        error_log("Session already set: username=" . $_SESSION['username']);
+        error_log("Token 'rememberme' no válido.");
     }
 }
 
-$controller = $_GET['controller'] ?? 'auth';
-$action = $_GET['action'] ?? 'login';
-
-if (($controller == 'auth' && $action == 'login') || ($controller == 'auth' && $action == 'register') || ($controller == 'auth' && $action == 'logout') || ($controller == 'auth' && $action == '') || ($controller == '' && $action == '') || ($_SERVER['REQUEST_URI'] == '/')) {
-    // Borrar la sesión y la cookie PHPSESSID
-    session_unset();
-    session_destroy();
-
-    // Borrar la cookie PHPSESSID
-    if (ini_get("session.use_cookies")) {
-        $params = session_get_cookie_params();
-        setcookie(session_name(), '', time() - 42000,
-            $params["path"], $params["domain"],
-            $params["secure"], $params["httponly"]
-        );
-    }
-
-    session_start();
-    error_log("Session cleared for login, register, logout, or root action");
-}
-
-ob_start();
-
+// Enrutamiento de controladores
 switch ($controller) {
     case 'auth':
         $authController = new AuthController();
@@ -69,7 +59,7 @@ switch ($controller) {
         } elseif ($action == 'register') {
             $authController->register();
         } elseif ($action == 'logout') {
-            $authController->logout();
+            $authController->logout(); // Solo aquí se borran las cookies y la sesión
         }
         break;
     case 'quiz':
@@ -78,24 +68,47 @@ switch ($controller) {
             exit();
         }
         $quizController = new QuizController();
-        if ($action == 'submitQuiz') {
-            error_log("Routing to submitQuiz");
+        if ($action == 'getAllQuizzes') {
+            $quizController->getAllQuizzes();
+        } elseif ($action == 'submitQuiz') {
             $quizController->submitQuiz($_GET['quiz_id']);
         } elseif ($action == 'takeQuiz') {
             $quizController->takeQuiz($_GET['quiz_id']);
         } elseif ($action == 'summary') {
             $quizController->summary();
-        } elseif ($action == 'getAllQuizzes') {
-            $quizController->getAllQuizzes();
+        } elseif ($action == 'createQuizForm') {
+            $quizController->createQuizForm();
+        } elseif ($action == 'createQuiz') {
+            $quizController->createQuiz();
+        } elseif ($action == 'editQuizForm') {
+            $quizController->editQuizForm($_GET['quiz_id']);
+        } elseif ($action == 'updateQuiz') {
+            $quizController->updateQuiz($_GET['quiz_id']);
+        } elseif ($action == 'deleteQuiz') {
+            $quizController->deleteQuiz($_GET['quiz_id']);
+        } elseif ($action == 'manageQuizzes') {
+            $quizController->manageQuizzes();
+        } elseif ($action == 'addQuestionForm') {
+            $quizController->addQuestionForm($_GET['quiz_id']);
+        } elseif ($action == 'addQuestion') {
+            $quizController->addQuestion();
+        } elseif ($action == 'editQuestionForm') {
+            $quizController->editQuestionForm($_GET['question_id']);
+        } elseif ($action == 'updateQuestion') {
+            $quizController->updateQuestion($_GET['question_id']);
+        } elseif ($action == 'deleteQuestion') {
+            $quizController->deleteQuestion($_GET['question_id']);
         }
         break;
     default:
-        echo "Controller not found";
+        echo "Controlador no encontrado";
         break;
 }
 
+// Obtener el contenido generado
 $content = ob_get_clean();
 
+// Mostrar la plantilla HTML
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -106,6 +119,19 @@ $content = ob_get_clean();
     <link href="/quiz.css" rel="stylesheet" type="text/css">
 </head>
 <body>
+<header>
+    <nav>
+        <ul>
+            <li><a href="/public/index.php">Home</a></li>
+            <?php if (isset($_SESSION['username'])): ?>
+                <li><a href="/public/index.php?controller=auth&action=logout">Logout</a></li>
+            <?php else: ?>
+                <li><a href="/public/index.php?controller=auth&action=login">Login</a></li>
+                <li><a href="/public/index.php?controller=auth&action=register">Register</a></li>
+            <?php endif; ?>
+        </ul>
+    </nav>
+</header>
 <div id="app"><?php echo $content; ?></div>
 </body>
 </html>

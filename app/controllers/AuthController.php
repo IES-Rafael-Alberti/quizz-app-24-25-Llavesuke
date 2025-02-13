@@ -100,14 +100,49 @@ class AuthController
     }
 
     public function logout() {
-        session_start();
-        session_unset();
+        // Iniciar la sesión si no está activa
+        if (session_status() === PHP_SESSION_NONE) {
+            session_start();
+        }
+
+        // 1. Borrar la cookie "rememberme" si existe
+        if (isset($_COOKIE['rememberme'])) {
+            // Borrar la cookie estableciendo una fecha de expiración en el pasado
+            setcookie('rememberme', '', time() - 3600, '/', 'localhost', true, true);
+            unset($_COOKIE['rememberme']); // Eliminar la cookie del array $_COOKIE
+            error_log("Cookie 'rememberme' eliminada.");
+        }
+
+        // 2. Borrar todas las variables de sesión
+        $_SESSION = []; // Vaciar el array de sesión
+        error_log("Variables de sesión eliminadas.");
+
+        // 3. Borrar la cookie de sesión si está configurada
+        if (ini_get("session.use_cookies")) {
+            $params = session_get_cookie_params();
+            setcookie(
+                session_name(), // Nombre de la cookie de sesión
+                '', // Valor vacío
+                time() - 42000, // Fecha de expiración en el pasado
+                $params["path"], // Ruta de la cookie
+                $params["domain"], // Dominio de la cookie
+                $params["secure"], // Segura (HTTPS)
+                $params["httponly"] // Solo HTTP
+            );
+            error_log("Cookie de sesión eliminada.");
+        }
+
+        // 4. Destruir la sesión
         session_destroy();
+        error_log("Sesión destruida.");
 
-        // Eliminar la cookie "Remember Me"
-        setcookie('rememberme', '', time() - 3600, '/', 'localhost', true, true);
+        // 5. Redirigir al usuario de manera segura
+        // Usar una URL absoluta para evitar problemas con rutas relativas
+        $redirectUrl = "/public/index.php?controller=auth&action=login";
+        header("Location: " . $redirectUrl);
+        error_log("Redirigiendo a: " . $redirectUrl);
 
-        header("Location: /public/index.php?controller=auth&action=login");
+        // 6. Asegurarse de que el script se detenga después de la redirección
         exit();
     }
 }
