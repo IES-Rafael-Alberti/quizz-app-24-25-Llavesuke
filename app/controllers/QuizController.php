@@ -159,6 +159,16 @@ class QuizController {
     }
 
     public function deleteQuiz($quiz_id) {
+        // Eliminar preguntas asociadas al cuestionario
+        $query = "DELETE FROM Preguntas WHERE quiz_id = ?";
+        $stmt = $this->db->prepare($query);
+        $stmt->bind_param("i", $quiz_id);
+        if (!$stmt->execute()) {
+            echo "Error deleting questions";
+            return;
+        }
+
+        // Eliminar el cuestionario
         if ($this->quiz->delete($quiz_id)) {
             header("Location: /public/index.php?controller=quiz&action=manageQuizzes");
             exit();
