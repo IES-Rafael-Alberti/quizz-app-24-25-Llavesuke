@@ -15,6 +15,9 @@ class QuizController {
         $this->question = new Question($this->db);
     }
 
+    /**
+     * Adds a new question to a quiz.
+     */
     public function addQuestion() {
         if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             $this->question->quiz_id = $_POST['quiz_id'];
@@ -33,6 +36,9 @@ class QuizController {
         }
     }
 
+    /**
+     * Creates a new quiz.
+     */
     public function createQuiz() {
         if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             $this->quiz->title = $_POST['title'];
@@ -46,6 +52,9 @@ class QuizController {
         }
     }
 
+    /**
+     * Updates an existing quiz.
+     */
     public function updateQuiz($quiz_id) {
         if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             $this->quiz->quiz_id = $quiz_id;
@@ -60,6 +69,9 @@ class QuizController {
         }
     }
 
+    /**
+     * Updates an existing question.
+     */
     public function updateQuestion($question_id) {
         if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             $this->question->question_id = $question_id;
@@ -78,11 +90,17 @@ class QuizController {
         }
     }
 
+    /**
+     * Displays the quiz for the user to take.
+     */
     public function takeQuiz($quiz_id) {
         $questions = $this->question->getByQuizId($quiz_id);
         include dirname(__FILE__) . '/../views/quiz/take.php';
     }
 
+    /**
+     * Submits the quiz and calculates the score.
+     */
     public function submitQuiz($quiz_id) {
         session_start();
         error_log("submitQuiz called with quiz_id: " . $quiz_id);
@@ -130,6 +148,9 @@ class QuizController {
         exit();
     }
 
+    /**
+     * Retrieves statistics for a quiz.
+     */
     public function getStatistics($quiz_id) {
         $query = "SELECT AVG(percentage) as average_score, COUNT(*) as attempts FROM Resultados WHERE quiz_id = ?";
         $stmt = $this->db->prepare($query);
@@ -138,6 +159,9 @@ class QuizController {
         return $stmt->get_result()->fetch_assoc();
     }
 
+    /**
+     * Displays the summary of the quiz results.
+     */
     public function summary() {
         $score = $_GET['score'];
         $total_questions = $_GET['total_questions'];
@@ -147,19 +171,28 @@ class QuizController {
         include dirname(__FILE__) . '/../views/quiz/summary.php';
     }
 
+    /**
+     * Retrieves and displays all quizzes.
+     */
     public function getAllQuizzes() {
         $quizzes = $this->quiz->getAll();
         include dirname(__FILE__) . '/../views/quiz/list.php';
     }
 
+    /**
+     * Displays the form to edit a quiz.
+     */
     public function editQuizForm($quiz_id) {
         $quiz = $this->quiz->getById($quiz_id);
         $questions = $this->question->getByQuizId($quiz_id);
         include dirname(__FILE__) . '/../views/quiz/edit.php';
     }
 
+    /**
+     * Deletes a quiz and its associated questions.
+     */
     public function deleteQuiz($quiz_id) {
-        // Eliminar preguntas asociadas al cuestionario
+        // Delete associated questions
         $query = "DELETE FROM Preguntas WHERE quiz_id = ?";
         $stmt = $this->db->prepare($query);
         $stmt->bind_param("i", $quiz_id);
@@ -168,7 +201,7 @@ class QuizController {
             return;
         }
 
-        // Eliminar el cuestionario
+        // Delete the quiz
         if ($this->quiz->delete($quiz_id)) {
             header("Location: /public/index.php?controller=quiz&action=manageQuizzes");
             exit();
@@ -177,24 +210,39 @@ class QuizController {
         }
     }
 
+    /**
+     * Displays the quiz management page.
+     */
     public function manageQuizzes() {
         $quizzes = $this->quiz->getAll();
         include dirname(__FILE__) . '/../views/quiz/manage.php';
     }
 
+    /**
+     * Displays the form to create a new quiz.
+     */
     public function createQuizForm() {
         include dirname(__FILE__) . '/../views/quiz/create.php';
     }
 
+    /**
+     * Displays the form to add a new question to a quiz.
+     */
     public function addQuestionForm($quiz_id) {
         include dirname(__FILE__) . '/../views/quiz/add_question.php';
     }
 
+    /**
+     * Displays the form to edit a question.
+     */
     public function editQuestionForm($question_id) {
         $question = $this->question->getById($question_id);
         include dirname(__FILE__) . '/../views/quiz/edit_question.php';
     }
 
+    /**
+     * Deletes a question from a quiz.
+     */
     public function deleteQuestion($question_id) {
         $quiz_id = $this->question->getQuizIdByQuestionId($question_id);
         if ($this->question->delete($question_id)) {

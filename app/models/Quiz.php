@@ -11,6 +11,9 @@ class Quiz {
         $this->conn = $db;
     }
 
+    /**
+     * Creates a new quiz in the database.
+     */
     public function create() {
         $query = "INSERT INTO " . $this->table . " (title, description) VALUES (?, ?)";
         $stmt = $this->conn->prepare($query);
@@ -18,11 +21,17 @@ class Quiz {
         return $stmt->execute();
     }
 
+    /**
+     * Retrieves all quizzes from the database.
+     */
     public function getAll() {
         $query = "SELECT * FROM " . $this->table;
         return $this->conn->query($query);
     }
 
+    /**
+     * Retrieves a quiz by its ID.
+     */
     public function getById($quiz_id) {
         $query = "SELECT * FROM " . $this->table . " WHERE quiz_id = ?";
         $stmt = $this->conn->prepare($query);
@@ -31,6 +40,9 @@ class Quiz {
         return $stmt->get_result()->fetch_assoc();
     }
 
+    /**
+     * Updates an existing quiz in the database.
+     */
     public function update() {
         $query = "UPDATE " . $this->table . " SET title = ?, description = ? WHERE quiz_id = ?";
         $stmt = $this->conn->prepare($query);
@@ -38,6 +50,9 @@ class Quiz {
         return $stmt->execute();
     }
 
+    /**
+     * Deletes a quiz from the database.
+     */
     public function delete($quiz_id) {
         $query = "DELETE FROM " . $this->table . " WHERE quiz_id = ?";
         $stmt = $this->conn->prepare($query);

@@ -14,6 +14,9 @@ class AuthController
         $this->user = new User($this->db);
     }
 
+    /**
+     * Handles user registration.
+     */
     public function register() {
         if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             session_start();
@@ -28,6 +31,7 @@ class AuthController
                 $user = $this->user->login();
                 $_SESSION['user_id'] = $user['user_id'];
 
+                // Set "Remember Me" cookie if checked
                 if (isset($_POST['rememberme'])) {
                     $token = bin2hex(random_bytes(16));
                     setcookie('rememberme', $token, [
@@ -50,11 +54,14 @@ class AuthController
                 echo "Error en el registro";
             }
         } else {
-            // Mostrar el formulario de registro si no es una solicitud POST
+            // Show registration form if not a POST request
             include dirname(__FILE__) . '/../views/auth/register.php';
         }
     }
 
+    /**
+     * Handles user login.
+     */
     public function login() {
         if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             session_start();
@@ -67,6 +74,7 @@ class AuthController
                 $_SESSION['role'] = $user['role'];
                 $_SESSION['user_id'] = $user['user_id'];
 
+                // Set "Remember Me" cookie if checked
                 if (isset($_POST['rememberme'])) {
                     $token = bin2hex(random_bytes(16));
                     setcookie('rememberme', $token, [
@@ -89,60 +97,61 @@ class AuthController
                 header("Location: /public/index.php?controller=quiz&action=getAllQuizzes");
                 exit();
             } else {
-                // Mostrar error si las credenciales son incorrectas
+                // Show error if credentials are incorrect
                 $error = "Credenciales incorrectas";
                 include dirname(__FILE__) . '/../views/auth/login.php';
             }
         } else {
-            // Mostrar el formulario de login si no es una solicitud POST
+            // Show login form if not a POST request
             include dirname(__FILE__) . '/../views/auth/login.php';
         }
     }
 
+    /**
+     * Handles user logout.
+     */
     public function logout() {
-        // Iniciar la sesión si no está activa
+        // Start session if not active
         if (session_status() === PHP_SESSION_NONE) {
             session_start();
         }
 
-        // 1. Borrar la cookie "rememberme" si existe
+        // 1. Delete "rememberme" cookie if exists
         if (isset($_COOKIE['rememberme'])) {
-            // Borrar la cookie estableciendo una fecha de expiración en el pasado
             setcookie('rememberme', '', time() - 3600, '/', 'localhost', true, true);
-            unset($_COOKIE['rememberme']); // Eliminar la cookie del array $_COOKIE
+            unset($_COOKIE['rememberme']);
             error_log("Cookie 'rememberme' eliminada.");
         }
 
-        // 2. Borrar todas las variables de sesión
-        $_SESSION = []; // Vaciar el array de sesión
+        // 2. Clear all session variables
+        $_SESSION = [];
         error_log("Variables de sesión eliminadas.");
 
-        // 3. Borrar la cookie de sesión si está configurada
+        // 3. Delete session cookie if set
         if (ini_get("session.use_cookies")) {
             $params = session_get_cookie_params();
             setcookie(
-                session_name(), // Nombre de la cookie de sesión
-                '', // Valor vacío
-                time() - 42000, // Fecha de expiración en el pasado
-                $params["path"], // Ruta de la cookie
-                $params["domain"], // Dominio de la cookie
-                $params["secure"], // Segura (HTTPS)
-                $params["httponly"] // Solo HTTP
+                session_name(),
+                '',
+                time() - 42000,
+                $params["path"],
+                $params["domain"],
+                $params["secure"],
+                $params["httponly"]
             );
             error_log("Cookie de sesión eliminada.");
         }
 
-        // 4. Destruir la sesión
+        // 4. Destroy the session
         session_destroy();
         error_log("Sesión destruida.");
 
-        // 5. Redirigir al usuario de manera segura
-        // Usar una URL absoluta para evitar problemas con rutas relativas
+        // 5. Redirect user securely
         $redirectUrl = "/public/index.php?controller=auth&action=login";
         header("Location: " . $redirectUrl);
         error_log("Redirigiendo a: " . $redirectUrl);
 
-        // 6. Asegurarse de que el script se detenga después de la redirección
+        // 6. Ensure script stops after redirection
         exit();
     }
 }

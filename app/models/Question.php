@@ -16,6 +16,9 @@ class Question {
         $this->conn = $db;
     }
 
+    /**
+     * Adds a new question to the database.
+     */
     public function add() {
         $query = "INSERT INTO " . $this->table . " (quiz_id, question_text, option_a, option_b, option_c, option_d, correct_option) VALUES (?, ?, ?, ?, ?, ?, ?)";
         $stmt = $this->conn->prepare($query);
@@ -23,6 +26,9 @@ class Question {
         return $stmt->execute();
     }
 
+    /**
+     * Retrieves all questions for a specific quiz.
+     */
     public function getByQuizId($quiz_id) {
         $query = "SELECT *, 
               CASE correct_option 
@@ -38,6 +44,9 @@ class Question {
         return $stmt->get_result();
     }
 
+    /**
+     * Retrieves a question by its ID.
+     */
     public function getById($question_id) {
         $query = "SELECT * FROM " . $this->table . " WHERE question_id = ?";
         $stmt = $this->conn->prepare($query);
@@ -46,6 +55,9 @@ class Question {
         return $stmt->get_result()->fetch_assoc();
     }
 
+    /**
+     * Updates an existing question in the database.
+     */
     public function update() {
         $query = "UPDATE " . $this->table . " SET question_text = ?, option_a = ?, option_b = ?, option_c = ?, option_d = ?, correct_option = ? WHERE question_id = ?";
         $stmt = $this->conn->prepare($query);
@@ -53,6 +65,9 @@ class Question {
         return $stmt->execute();
     }
 
+    /**
+     * Deletes a question from the database.
+     */
     public function delete($question_id) {
         $query = "DELETE FROM " . $this->table . " WHERE question_id = ?";
         $stmt = $this->conn->prepare($query);
@@ -60,6 +75,9 @@ class Question {
         return $stmt->execute();
     }
 
+    /**
+     * Retrieves the quiz ID associated with a question ID.
+     */
     public function getQuizIdByQuestionId($question_id) {
         $query = "SELECT quiz_id FROM " . $this->table . " WHERE question_id = ?";
         $stmt = $this->conn->prepare($query);

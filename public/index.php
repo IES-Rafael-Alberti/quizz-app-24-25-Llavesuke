@@ -1,34 +1,34 @@
 <?php
-// Iniciar el buffer de salida
+// Start output buffering
 ob_start();
 
-// Cargar configuraciones y controladores
+// Load configurations and controllers
 require_once(__DIR__ . '/../config/config.php');
 require_once(__DIR__ . '/../app/controllers/AuthController.php');
 require_once(__DIR__ . '/../app/controllers/QuizController.php');
 
 global $conn;
 
-// Iniciar la sesión si no está activa
+// Start the session if it is not already active
 if (session_status() === PHP_SESSION_NONE) {
     session_start();
 }
 
-// Obtener el controlador y la acción desde la URL
+// Get the controller and action from the URL, default to 'auth' and 'login' respectively
 $controller = $_GET['controller'] ?? 'auth';
 $action = $_GET['action'] ?? 'login';
 
-// Verificar si el usuario está logeado
+// Check if the user is logged in
 $isLoggedIn = isset($_SESSION['username']);
 
-// Si el usuario está logeado, no permitir acceso a login, register o la raíz (/)
+// If the user is logged in, do not allow access to login, register, or the root (/)
 if ($isLoggedIn && ($controller == 'auth' && ($action == 'login' || $action == 'register') || ($controller == '' && $action == ''))) {
-    // Redirigir al usuario a la página principal o al dashboard
+    // Redirect the user to the main page or dashboard
     header("Location: /public/index.php?controller=quiz&action=getAllQuizzes");
     exit();
 }
 
-// Manejar la lógica de "Remember Me"
+// Handle "Remember Me" logic
 if (!$isLoggedIn && isset($_COOKIE['rememberme'])) {
     $token = $_COOKIE['rememberme'];
     $query = "SELECT * FROM Usuarios WHERE remember_token = ?";
@@ -38,19 +38,20 @@ if (!$isLoggedIn && isset($_COOKIE['rememberme'])) {
     $user = $stmt->get_result()->fetch_assoc();
 
     if ($user) {
+        // Set session variables if the token is valid
         $_SESSION['username'] = $user['username'];
         $_SESSION['role'] = $user['role'];
         $_SESSION['user_id'] = $user['user_id'];
         $_SESSION['checked_rememberme'] = true;
-        error_log("Usuario autenticado mediante 'Remember Me'.");
+        error_log("User authenticated via 'Remember Me'.");
         header("Location: /public/index.php?controller=quiz&action=getAllQuizzes");
         exit();
     } else {
-        error_log("Token 'rememberme' no válido.");
+        error_log("Invalid 'rememberme' token.");
     }
 }
 
-// Enrutamiento de controladores
+// Controller routing
 switch ($controller) {
     case 'auth':
         $authController = new AuthController();
@@ -59,10 +60,11 @@ switch ($controller) {
         } elseif ($action == 'register') {
             $authController->register();
         } elseif ($action == 'logout') {
-            $authController->logout(); // Solo aquí se borran las cookies y la sesión
+            $authController->logout(); // Only here cookies and session are deleted
         }
         break;
     case 'quiz':
+        // Redirect to login if the user is not logged in
         if (!isset($_SESSION['username'])) {
             header("Location: /public/index.php?controller=auth&action=login");
             exit();
@@ -101,14 +103,14 @@ switch ($controller) {
         }
         break;
     default:
-        echo "Controlador no encontrado";
+        echo "Controller not found";
         break;
 }
 
-// Obtener el contenido generado
+// Get the generated content
 $content = ob_get_clean();
 
-// Mostrar la plantilla HTML
+// Display the HTML template
 ?>
 <!DOCTYPE html>
 <html lang="en">
